@@ -1,0 +1,28 @@
+<!-- receiver.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Receiver</title>
+</head>
+<body>
+    <h1>Files Available for Download</h1>
+    <ul id="fileList">
+        <!-- List files here with links to download -->
+    </ul>
+    <script>
+        // Use WebSocket to receive file updates
+        var socket = new WebSocket("ws://localhost:8080/ws");
+        socket.onmessage = function(event) {
+            var fileList = document.getElementById("fileList");
+            var listItem = document.createElement("li");
+            var link = document.createElement("a");
+            link.href = event.data;
+            link.textContent = "Download File";
+            listItem.appendChild(link);
+            fileList.appendChild(listItem);
+        };
+    </script>
+</body>
+</html>

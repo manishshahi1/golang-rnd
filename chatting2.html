@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        /* Add your CSS styles here */
+    </style>
+</head>
+<body>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="logout()">Logout</button>
+    <button onclick="login()">Login</button>
+
+    <script>
+        let socket;
+
+        function login() {
+            // Connect to WebSocket
+            socket = new WebSocket("ws://localhost:8080/ws");
+            socket.onopen = function(event) {
+                console.log("WebSocket connection established.");
+                fetchPendingMessages();
+            };
+
+            socket.onmessage = function(event) {
+                // Handle incoming messages
+                var message = JSON.parse(event.data);
+                displayMessage(message);
+            };
+
+            socket.onclose = function(event) {
+                console.log("WebSocket connection closed.");
+            };
+        }
+
+        function logout() {
+            // Close WebSocket connection
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+                console.log("Logged out.");
+            }
+        }
+
+        function sendMessage() {
+            // Send message to WebSocket
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                var content = document.getElementById("messageInput").value;
+                var message = { "content": content };
+                socket.send(JSON.stringify(message));
+                document.getElementById("messageInput").value = "";
+            } else {
+                console.log("WebSocket connection is not open.");
+            }
+        }
+
+       function fetchPendingMessages() {
+    // Send request to fetch pending messages upon login
+    console.log("Fetching pending messages...");
+
+    fetch("/fetch-pending-messages", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to fetch pending messages");
+        }
+        return response.json();
+    })
+    .then(messages => {
+        // Update the UI to display pending messages
+        messages.forEach(message => displayMessage(message));
+    })
+    .catch(error => {
+        console.error("Error fetching pending messages:", error);
+    });
+}
+
+
+        function displayMessage(message) {
+            // Display message in the UI
+            var messagesDiv = document.getElementById("messages");
+            messagesDiv.innerHTML += "<p>" + message.content + "</p>";
+        }
+    </script>
+</body>
+</html>

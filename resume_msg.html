@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #messages {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow-y: scroll;
+            max-height: 300px;
+            height:500px;
+        }
+
+        #messageInput {
+            width: calc(100% - 80px);
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="messages"></div>
+        <div>
+            <input type="text" id="messageInput">
+            <br><br>
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <button onclick="reconnect()">Reconnect</button>
+            <button onclick="fetchPendingMessages()">Fetch Pending Messages</button>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+
+        function connectWebSocket() {
+            const clientId = getClientID();
+            ws = new WebSocket("ws://localhost:8080/ws?clientId=" + clientId);
+
+            ws.onopen = function(event) {
+                console.log("Connected to WebSocket server");
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                const messagesDiv = document.getElementById("messages");
+                const messageDiv = document.createElement("div");
+                messageDiv.textContent = data.clientId + ": " + data.message + " (Delivered: " + data.delivered + ", Seen: " + data.seen + ")";
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            };
+
+            ws.onclose = function(event) {
+                console.log("Connection closed");
+            };
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById("messageInput");
+            const message = messageInput.value;
+            if (message.trim() !== "") {
+                ws.send(message);
+                messageInput.value = "";
+            }
+        }
+
+        function disconnect() {
+            ws.close();
+        }
+
+        function reconnect() {
+            connectWebSocket();
+            // Send reconnection request to fetch pending messages
+            ws.send("reconnect");
+        }
+
+        function fetchPendingMessages() {
+            // Send fetch pending messages request to the server
+            ws.send("reconnect");
+        }
+
+        function getClientID() {
+            let clientId = localStorage.getItem("clientId");
+            if (!clientId) {
+                clientId = generateClientID();
+                localStorage.setItem("clientId", clientId);
+            }
+            return clientId;
+        }
+
+        function generateClientID() {
+            const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            let clientId = "";
+            for (let i = 0; i < 8; i++) {
+                clientId += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return clientId;
+        }
+
+        // Connect WebSocket when the page loads
+        connectWebSocket();
+    </script>
+</body>
+</html>

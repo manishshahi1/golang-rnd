@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka WebSocket Demo</title>
+    <script>
+        function sendMessage() {
+            var messageInput = document.getElementById("messageInput");
+            var message = messageInput.value;
+            socket.send(message);
+            messageInput.value = "";
+        }
+
+        function login() {
+            var usernameInput = document.getElementById("usernameInput");
+            var username = usernameInput.value;
+            var loginSocket = new WebSocket("ws://localhost:8080/login?username=" + username);
+            loginSocket.onmessage = function(event) {
+                var message = event.data;
+                var messageDiv = document.getElementById("messages");
+                messageDiv.innerHTML += "<p>" + message + "</p>";
+            };
+        }
+
+        function logout() {
+            var usernameInput = document.getElementById("usernameInput");
+            var username = usernameInput.value;
+            var logoutSocket = new WebSocket("ws://localhost:8080/logout?username=" + username);
+            logoutSocket.onmessage = function(event) {
+                var message = event.data;
+                var messageDiv = document.getElementById("messages");
+                messageDiv.innerHTML += "<p>" + message + "</p>";
+            };
+        }
+    </script>
+</head>
+<body>
+    <h1>Kafka WebSocket Demo</h1>
+    <div id="messages"></div>
+    <br>
+    <input type="text" id="messageInput">
+    <button onclick="sendMessage()">Send Message</button>
+    <br><br>
+    <input type="text" id="usernameInput" placeholder="Username">
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
+</body>
+</html>

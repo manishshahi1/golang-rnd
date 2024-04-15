@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumable File Upload</title>
+</head>
+<body>
+    <input type="file" id="fileInput">
+    <button onclick="startUpload()">Start Upload</button>
+    <div id="progress"></div>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:8080/upload");
+
+        function startUpload() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const chunkSize = 1024 * 1024; // 1MB chunk size
+            let offset = 0;
+
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const chunk = event.target.result;
+                ws.send(chunk);
+
+                offset += chunk.byteLength;
+                updateProgress(offset, file.size);
+
+                if (offset < file.size) {
+                    readNextChunk();
+                } else {
+                    ws.close();
+                }
+            };
+
+            function readNextChunk() {
+                const slice = file.slice(offset, offset + chunkSize);
+                reader.readAsArrayBuffer(slice);
+            }
+
+            readNextChunk();
+        }
+
+        function updateProgress(current, total) {
+            const progress = Math.round((current / total) * 100);
+            document.getElementById("progress").innerText = `Progress: ${progress}%`;
+        }
+
+        ws.onclose = function() {
+            document.getElementById("progress").innerText = "Upload complete.";
+        };
+    </script>
+</body>
+</html>

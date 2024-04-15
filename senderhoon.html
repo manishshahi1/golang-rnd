@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Transfer</title>
+</head>
+<body>
+    <h1>File Transfer</h1>
+    
+    <h2>Upload File</h2>
+    <form action="http://localhost:8080/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file">
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>Download File</h2>
+    <form action="http://localhost:8080/receive" method="get">
+        <button type="submit">Download</button>
+    </form>
+
+    <h2>Uploaded Image</h2>
+    <img src="http://localhost:8080/preview" alt="Uploaded Image" id="previewImage">
+    
+    <script>
+        // Auto-refresh the uploaded image every 5 seconds
+        setInterval(function() {
+            var imgElement = document.getElementById('previewImage');
+            var timestamp = new Date().getTime(); // Add timestamp to prevent caching
+            imgElement.src = "http://localhost:8080/preview?" + timestamp;
+        }, 5000);
+    </script>
+</body>
+</html>

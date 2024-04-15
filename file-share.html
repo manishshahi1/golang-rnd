@@ -1,0 +1,112 @@
+package main
+
+import (
+    "encoding/json"
+    "log"
+    "net/http"
+    "gopkg.in/mgo.v2"
+    "gopkg.in/mgo.v2/bson"
+    "github.com/gorilla/websocket"
+)
+
+// WebSocket configuration
+var upgrader = websocket.Upgrader{}
+
+type FileMetadata struct {
+    ID          bson.ObjectId `bson:"_id,omitempty"`
+    FileName    string        `json:"filename"`
+    ContentType string        `json:"contenttype"`
+    Data        string        `json:"data"`
+    Sender      string        `json:"sender"`
+    Receiver    string        `json:"receiver"`
+}
+
+// MongoDB configuration
+var mongoSession *mgo.Session
+var mongoDBName = "filesharing"
+var mongoCollectionName = "files"
+
+var clients = make(map[*websocket.Conn]bool)
+var broadcast = make(chan FileMetadata)
+
+func main() {
+    // Initialize MongoDB session
+    mongoSession, err := mgo.Dial("localhost")
+    if err != nil {
+        log.Fatalf("Failed to connect to MongoDB: %v", err)
+    }
+    defer mongoSession.Close()
+
+    // HTTP handler for WebSocket upgrade
+    http.HandleFunc("/ws", handleWebSocket)
+
+    // Start broadcasting files to clients
+    go broadcastFiles()
+
+    // Serve HTTP
+    log.Println("Server is running on :8080...")
+    log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Println(err)
+        return
+    }
+    defer conn.Close()
+
+    // Extract sender and receiver information from query parameters
+    sender := r.URL.Query().Get("sender")
+    receiver := r.URL.Query().Get("receiver")
+
+    clients[conn] = true
+
+    for {
+        var metadata FileMetadata
+        err := conn.ReadJSON(&metadata)
+        if err != nil {
+            log.Println(err)
+            delete(clients, conn)
+            break
+        }
+
+        // Assign sender and receiver information to metadata
+        metadata.Sender = sender
+        metadata.Receiver = receiver
+
+        broadcast <- metadata
+
+        // Save metadata to MongoDB
+        err = saveMetadataToMongo(metadata)
+        if err != nil {
+            log.Println(err)
+        }
+    }
+}
+
+func broadcastFiles() {
+    for {
+        metadata := <-broadcast
+        for client := range clients {
+            err := client.WriteJSON(metadata)
+            if err != nil {
+                log.Println(err)
+                client.Close()
+                delete(clients, client)
+            }
+        }
+    }
+}
+
+func saveMetadataToMongo(metadata FileMetadata) error {
+    sessionCopy := mongoSession.Copy()
+    defer sessionCopy.Close()
+
+    c := sessionCopy.DB(mongoDBName).C(mongoCollectionName)
+    err := c.Insert(metadata)
+    if err != nil {
+        return err
+    }
+    return nil
+}

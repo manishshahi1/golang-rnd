@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+</head>
+<body>
+    <h1>Chat Application</h1>
+    
+    <div id="chatBox" style="display: none;">
+        <div id="chatMessages"></div>
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div id="loginSection">
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        let socket;
+        let clientId = null;
+
+        function login() {
+            socket = new WebSocket("ws://localhost:8080/ws");
+
+            socket.onopen = function(event) {
+                console.log("Connected to WebSocket server");
+                socket.send(JSON.stringify({ action: "identify" }));
+            };
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                if (data.action === "identification") {
+                    clientId = data.clientId;
+                    console.log("Client identified with ID:", clientId);
+                    loadPreviousMessages();
+                } else {
+                    displayMessage(data);
+                }
+            };
+
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("chatBox").style.display = "block";
+        }
+
+        function loadPreviousMessages() {
+            // Send request to server to get previous messages
+            socket.send(JSON.stringify({ action: "loadPreviousMessages" }));
+        }
+
+        function logout() {
+            if (socket) {
+                socket.close();
+            }
+
+            clientId = null;
+            document.getElementById("loginSection").style.display = "block";
+            document.getElementById("chatBox").style.display = "none";
+            document.getElementById("chatMessages").innerHTML = "";
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById("messageInput");
+            const message = messageInput.value.trim();
+
+            if (message !== "") {
+                const messageData = {
+                    action: "sendMessage",
+                    clientId: clientId,
+                    message: message
+                };
+                socket.send(JSON.stringify(messageData));
+                messageInput.value = "";
+            }
+        }
+
+        function displayMessage(message) {
+            const chatMessages = document.getElementById("chatMessages");
+            const messageElement = document.createElement("div");
+            messageElement.innerText = message.message;
+            chatMessages.appendChild(messageElement);
+        }
+    </script>
+</body>
+</html>

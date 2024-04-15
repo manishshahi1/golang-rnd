@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat App</title>
+<style>
+  body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+  #chat-box { width: 300px; margin: 20px auto; border: 1px solid #ccc; padding: 10px; }
+  #message-list { list-style-type: none; padding: 0; }
+  #message-list li { margin-bottom: 5px; }
+  #message-list li span { font-weight: bold; }
+</style>
+</head>
+<body>
+<div id="chat-box">
+  <ul id="message-list"></ul>
+  <input type="text" id="message" placeholder="Type your message...">
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+const ws = new WebSocket("ws://localhost:8080/ws");
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  const messageList = document.getElementById("message-list");
+  const listItem = document.createElement("li");
+  listItem.innerHTML = `<span>${data.from}:</span> ${data.content}`;
+  messageList.appendChild(listItem);
+};
+
+function sendMessage() {
+  const messageInput = document.getElementById("message");
+  const message = messageInput.value.trim();
+  if (message === "") return;
+
+  const to = "user2"; // Replace with recipient's username
+  const data = { to, content: message };
+  ws.send(JSON.stringify(data));
+
+  const messageList = document.getElementById("message-list");
+  const listItem = document.createElement("li");
+  listItem.innerHTML = `<span>You:</span> ${message}`;
+  messageList.appendChild(listItem);
+
+  messageInput.value = "";
+}
+</script>
+</body>
+</html>

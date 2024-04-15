@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-time Chat</title>
+<style>
+  #messages {
+    list-style-type: none;
+    padding: 0;
+  }
+  #messages li {
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<h1>Real-time Chat</h1>
+<ul id="messages"></ul>
+<input type="text" id="username-input" placeholder="Your username...">
+<input type="text" id="message-input" placeholder="Type your message...">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+  const socket = new WebSocket("ws://localhost:8080/ws");
+
+  socket.onopen = function(event) {
+    console.log("WebSocket is connected.");
+  };
+
+  socket.onmessage = function(event) {
+    console.log("Message received:", event.data);
+    const message = JSON.parse(event.data);
+    const messages = document.getElementById("messages");
+    const li = document.createElement("li");
+    li.textContent = `${message.username}: ${message.message}`;
+    messages.appendChild(li);
+  };
+
+  function sendMessage() {
+    const usernameInput = document.getElementById("username-input");
+    const messageInput = document.getElementById("message-input");
+    const username = usernameInput.value.trim();
+    const message = messageInput.value.trim();
+    if (username !== "" && message !== "") {
+      const data = {
+        username: username,
+        message: message
+      };
+      socket.send(JSON.stringify(data));
+      messageInput.value = "";
+    }
+  }
+</script>
+</body>
+</html>

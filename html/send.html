@@ -1,0 +1,18 @@
+<!-- sender.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Sender</title>
+</head>
+<body>
+    <h1>Send File</h1>
+    <form action="/send" method="post" enctype="multipart/form-data">
+        Sender Name: <input type="text" name="sender"><br>
+        Receiver Name: <input type="text" name="receiver"><br>
+        Select file to upload: <input type="file" name="file"><br>
+        <input type="submit" value="Upload File">
+    </form>
+</body>
+</html>
